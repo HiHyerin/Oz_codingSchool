@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="470" viewBox="0 0 500 470" role="img" aria-labelledby="title desc">
+  <title id="title">MySQL show tables result</title>
+  <desc id="desc">Terminal output showing ai_health database tables after Alembic migration.</desc>
+  <rect width="500" height="470" fill="#111111"/>
+  <text x="24" y="40" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">mysql&gt; show tables</text>
+  <text x="24" y="72" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">    -&gt; ;</text>
+  <text x="24" y="112" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">+------------------------+</text>
+  <text x="24" y="148" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">| Tables_in_ai_health   |</text>
+  <text x="24" y="184" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">+------------------------+</text>
+  <text x="24" y="220" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">| ai_analysis_results   |</text>
+  <text x="24" y="256" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">| alembic_version       |</text>
+  <text x="24" y="292" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">| medical_records       |</text>
+  <text x="24" y="328" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">| patients              |</text>
+  <text x="24" y="364" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">| users                 |</text>
+  <text x="24" y="400" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">| xray_images           |</text>
+  <text x="24" y="436" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="24">+------------------------+</text>
+  <text x="24" y="462" fill="#f2f2f2" font-family="Consolas, Monaco, monospace" font-size="20">6 rows in set (0.00 sec)</text>
+</svg>
