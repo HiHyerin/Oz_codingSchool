@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.schemas.enums import Department, Gender, Role
 
@@ -36,3 +36,48 @@ class UserRead(UserBase):
     id: int
     created_at: datetime
     updated_at: datetime | None = None
+
+
+# 회원 목록의 개별 회원 응답 클래스
+class UserListItemResponse(BaseModel):
+    # SQLAlchemy User 객체를 Pydantic 응답 모델로 변환할 수 있게 한다.
+    model_config = ConfigDict(from_attributes=True)
+
+    # 사용자 고유 ID
+    id: int
+
+    # 사용자 이메일
+    email: EmailStr
+
+    # 사용자 이름
+    name: str
+
+    # 사용자 부서
+    department: Department
+
+    # 사용자 성별
+    gender: Gender
+
+    # 사용자 휴대폰 번호
+    phone_number: str
+
+    # 사용자 권한
+    role: Role
+
+    # 계정 활성화 여부
+    is_active: bool
+
+
+# 회원 목록 조회 응답 클래스
+class UserListResponse(BaseModel):
+    # 검색/필터 조건을 반영한 전체 회원 수
+    total: int
+
+    # 현재 페이지 번호
+    page: int
+
+    # 페이지당 조회 수
+    size: int
+
+    # 회원 목록
+    items: list[UserListItemResponse]

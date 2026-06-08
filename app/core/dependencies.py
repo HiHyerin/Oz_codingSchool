@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db.databases import async_get_db
 from app.core.security import verify_access_token
 from app.models.user import User
+from app.models.enums import Role
 from app.repositories.user_repository import get_user_by_id
 
 # Authorization: Bearer <access_token> 형식의 헤더를 읽기 위한 객체
@@ -40,3 +41,21 @@ async def get_current_user(
         )
 
     return user
+
+
+# 현재 사용자가 관리자 권한인지 확인하는 dependency
+# 역할:
+# - Authorization 헤더의 access_token을 검증해서 현재 사용자를 가져온다.
+# - 현재 사용자의 role이 ADMIN인지 확인한다.
+# - ADMIN이면 User 객체를 반환한다.
+# - ADMIN이 아니면 403 Forbidden 에러를 발생시킨다.
+async def get_current_admin_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="관리자 권한이 필요합니다.",
+        )
+
+    return current_user
