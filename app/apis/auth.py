@@ -8,8 +8,9 @@ from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
     TokenRefreshResponse,
+    LogoutResponse,
 )
-from app.services.auth_service import signup, login, refresh_access_token
+from app.services.auth_service import signup, login, refresh_access_token, logout
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -74,3 +75,29 @@ async def refresh_token_handler(
             detail="Refresh Token이 없습니다. 다시 로그인해 주세요.",
         )
     return await refresh_access_token(refresh_token)
+
+
+# 로그아웃 API endpoint
+# 역할:
+# - 클라이언트의 refresh_token 쿠키를 삭제한다.
+# - access_token은 보통 클라이언트 메모리/localStorage/sessionStorage에서 직접 제거한다.
+# - 현재 서버가 refresh_token을 DB에 저장하지 않으므로 서버 측 무효화 처리는 하지 않는다.
+@router.post(
+    "/logout/",
+    response_model=LogoutResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def logout_handler(
+    # 쿠키 삭제를 위해 Response 객체를 받는다.
+    response: Response,
+):
+    # refresh_token 쿠키 삭제
+    # set_cookie로 만든 쿠키와 key/path가 같아야 정상 삭제된다.
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        samesite="lax",
+    )
+
+    # 로그아웃 결과 메시지 반환
+    return await logout()

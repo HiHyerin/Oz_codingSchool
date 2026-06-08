@@ -102,3 +102,17 @@ async def refresh_access_token(refresh_token: str):
     new_access_token = create_access_token(user_id=user_id)
 
     return {"access_token": new_access_token, "token_type": "bearer"}
+
+
+# 로그아웃 비즈니스 로직 함수
+# 역할:
+# - 서버 측에서 별도 refresh token 저장소를 운영하지 않는 현재 구조에서는
+#   로그아웃 성공 메시지만 생성한다.
+# - 실제 refresh_token 쿠키 삭제는 Response 객체가 필요한 라우터에서 처리한다.
+#
+# 반환값:
+# - 로그아웃 완료 메시지 dict
+async def logout():
+    return {
+        "detail": "로그아웃되었습니다.",
+    }

@@ -52,3 +52,8 @@ class LoginResponse(BaseModel):
 class TokenRefreshResponse(BaseModel):
     access_token: str
     token_type: str
+
+
+class LogoutResponse(BaseModel):
+    # 로그아웃 처리 결과 메시지
+    detail: str
