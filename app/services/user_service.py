@@ -2,7 +2,14 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import Department
-from app.repositories.user_repository import count_user_list, get_user_list
+from app.models.enums import Role
+from app.repositories.user_repository import (
+    count_user_list,
+    get_user_list,
+    get_user_by_id,
+    update_user_role,
+)
+from app.schemas.user import UserRoleUpdateRequest
 
 
 # 회원 목록 조회 비즈니스 로직 함수
@@ -66,3 +73,33 @@ async def get_users(
         "size": size,
         "items": users,
     }
+
+
+# 회원 권한 변경 비즈니스 로직 함수
+# 역할:
+# - 변경 대상 회원이 존재하는지 확인한다.
+# - 존재하지 않으면 404 에러를 발생시킨다.
+# - 존재하면 repository를 통해 role을 변경한다.
+async def change_user_role(
+    db: AsyncSession,
+    user_id: int,
+    request: UserRoleUpdateRequest,
+):
+    # 권한 변경 대상 회원 조회
+    user = await get_user_by_id(db, user_id)
+
+    # 대상 회원이 없으면 404
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="회원을 찾을 수 없습니다.",
+        )
+
+    # 요청받은 role로 회원 권한 변경
+    updated_user = await update_user_role(
+        db=db,
+        user=user,
+        role=request.role,
+    )
+
+    return updated_user

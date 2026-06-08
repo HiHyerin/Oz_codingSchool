@@ -81,3 +81,25 @@ class UserListResponse(BaseModel):
 
     # 회원 목록
     items: list[UserListItemResponse]
+
+
+# 회원 권한 변경 요청 클래스
+class UserRoleUpdateRequest(BaseModel):
+    # 변경할 권한
+    # 허용 값: PENDING, STAFF, ADMIN
+    role: Role
+
+
+# 회원 권한 변경 응답 클래스
+class UserRoleUpdateResponse(BaseModel):
+    # SQLAlchemy User 객체를 Pydantic 응답 모델로 변환할 수 있게 한다.
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: EmailStr
+    name: str
+    role: Role
+
+    # 수정 일시
+    # updated_at이 아직 없을 수 있으므로 None 허용
+    updated_at: datetime | None = None

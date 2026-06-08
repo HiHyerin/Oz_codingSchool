@@ -4,8 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db.databases import async_get_db
 from app.core.dependencies import get_current_admin_user
 from app.models.user import User
-from app.schemas.user import UserListResponse
-from app.services.user_service import get_users
+from app.schemas.user import (
+    UserListResponse,
+    UserRoleUpdateRequest,
+    UserRoleUpdateResponse,
+)
+from app.services.user_service import get_users, change_user_role
 
 router = APIRouter(
     prefix="/users",
@@ -46,4 +50,32 @@ async def get_users_handler(
         department=department,
         page=page,
         size=size,
+    )
+
+
+# 회원 권한 변경 API endpoint
+# 역할:
+# - 관리자 권한 사용자가 특정 회원의 권한을 변경한다.
+# - path parameter로 변경 대상 user_id를 받는다.
+# - request body로 변경할 role을 받는다.
+@router.patch(
+    "/{user_id}/role/",
+    response_model=UserRoleUpdateResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def change_user_role_handler(
+    # 권한을 변경할 대상 회원 ID
+    user_id: int,
+    # 변경할 권한 정보
+    request: UserRoleUpdateRequest,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # 관리자 인증/인가
+    # ADMIN 권한이 아니면 403 에러 발생
+    current_admin: User = Depends(get_current_admin_user),
+):
+    return await change_user_role(
+        db=db,
+        user_id=user_id,
+        request=request,
     )

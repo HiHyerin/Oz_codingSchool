@@ -4,6 +4,7 @@ from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
+from app.models.enums import Role
 
 
 # 이메일 중복 확인
@@ -115,3 +116,24 @@ async def count_user_list(
     result = await db.execute(query)
 
     return result.scalar_one()
+
+
+# 특정 회원의 권한을 변경하는 함수
+# 역할:
+# - DB에서 조회한 User 객체의 role 값을 변경한다.
+# - commit 후 refresh해서 변경된 최신 객체를 반환한다.
+async def update_user_role(
+    db: AsyncSession,
+    user: User,
+    role: Role,
+) -> User:
+    # User 객체의 role 필드 변경
+    user.role = role
+
+    # 변경사항 DB 반영
+    await db.commit()
+
+    # DB에 반영된 최신 값 다시 로드
+    await db.refresh(user)
+
+    return user
