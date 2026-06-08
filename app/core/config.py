@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     DB_PORT: str = "3306"
     DB_NAME: str = "ai_health"
 
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+
     model_config = {"env_file": "envs/.env", "extra": "ignore"}
 
 
