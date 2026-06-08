@@ -1,14 +1,14 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password
+from app.core.security import hash_password, create_access_token, verify_password
 from app.models.enums import Role
 from app.repositories.user_repository import (
     create_user,
     get_user_by_email,
     get_user_by_phone_number,
 )
-from app.schemas.auth import SignupRequest
+from app.schemas.auth import SignupRequest, LoginRequest
 
 # signup 함수에서 할 일
 
@@ -53,3 +53,33 @@ async def signup(db: AsyncSession, request: SignupRequest):
 
     user = await create_user(db, user_data)
     return user
+
+
+async def login(db: AsyncSession, request: LoginRequest):
+    # 사용자 조회
+    user = await get_user_by_email(db, request.email)
+
+    # 사용자가 없으면 로그인 실패 처리
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="이메일 또는 비밀번호가 일치하지 않습니다.",
+        )
+
+    # 비밀번호 비교
+    is_valid_password = verify_password(
+        request.password,
+        user.hashed_password,
+    )
+
+    if not is_valid_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="이메일 또는 비밀번호가 일치하지 않습니다.",
+        )
+
+    # 로그인 성공시 jwt access token 생성
+    access_token = create_access_token(user_id=user.id)
+
+    # 라우터에서 LoginResponse 형태로 변환되어 응답
+    return {"access_token": access_token, "token_type": "bearer", "user": user}

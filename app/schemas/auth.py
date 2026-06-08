@@ -23,3 +23,27 @@ class SignupResponse(BaseModel):
     phone_number: str
     role: Role
     is_active: bool
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class LoginUserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: EmailStr
+    name: str
+    role: Role
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+
+    # 토큰 타입
+    # 일반적으로 Bearer 인증 방식을 사용하므로 "bearer"를 반환한다.
+    token_type: str
+
+    user: LoginUserResponse
