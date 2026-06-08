@@ -32,3 +32,13 @@ async def create_user(db: AsyncSession, user_data: dict) -> User:
     await db.refresh(user)
 
     return user
+
+
+# user_id로 사용자를 조회하는 함수
+# 역할:
+# - access_token에서 꺼낸 user_id가 실제 DB에 존재하는 사용자인지 확인한다.
+# - 인증이 필요한 API에서 현재 로그인 사용자를 가져올 때 사용한다.
+async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
+    result = await db.execute(select(User).where(User.id == user_id))
+
+    return result.scalar_one_or_none()

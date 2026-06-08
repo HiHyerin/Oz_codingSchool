@@ -26,10 +26,7 @@ def create_access_token(user_id: int) -> str:
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     # jwt payload
-    payload = {
-        "user_id": user_id,
-        "exp": expire,
-    }
+    payload = {"user_id": user_id, "exp": expire, "type": "access"}
 
     # payload를 SECRET_KEY와 ALGORITHM으로 암호화해서 JWT 문자열 생성
     return jwt.encode(
@@ -90,4 +87,37 @@ def verify_refresh_token(refresh_token: str) -> int:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh Token이 만료되었거나 유효하지 않습니다.",
+        )
+
+
+# Access Token을 검증하고 user_id를 꺼내는 함수
+def verify_access_token(access_token: str) -> int:
+    try:
+        payload = jwt.decode(
+            access_token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+
+        token_type = payload.get("type")
+        user_id = payload.get("user_id")
+
+        if token_type != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="유효하지 않은 Access Token입니다.",
+            )
+
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Access Token 정보가 올바르지 않습니다.",
+            )
+
+        return int(user_id)
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Access Token이 만료되었거나 유효하지 않습니다.",
         )

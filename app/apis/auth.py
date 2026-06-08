@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, status, Response, Cookie, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import get_current_user
 from app.core.db.databases import async_get_db
+from app.models.user import User
 from app.schemas.auth import (
     SignupRequest,
     SignupResponse,
@@ -90,6 +92,9 @@ async def refresh_token_handler(
 async def logout_handler(
     # 쿠키 삭제를 위해 Response 객체를 받는다.
     response: Response,
+    # Authorization: Bearer <access_token> 헤더를 검증한다.
+    # 이 값이 없거나 잘못되면 여기서 401 에러가 발생한다.
+    current_user: User = Depends(get_current_user),
 ):
     # refresh_token 쿠키 삭제
     # set_cookie로 만든 쿠키와 key/path가 같아야 정상 삭제된다.
