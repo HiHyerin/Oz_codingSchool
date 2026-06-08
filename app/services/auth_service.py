@@ -1,7 +1,13 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password, create_access_token, verify_password
+from app.core.security import (
+    hash_password,
+    create_access_token,
+    verify_password,
+    create_refresh_token,
+    verify_refresh_token,
+)
 from app.models.enums import Role
 from app.repositories.user_repository import (
     create_user,
@@ -80,6 +86,19 @@ async def login(db: AsyncSession, request: LoginRequest):
 
     # 로그인 성공시 jwt access token 생성
     access_token = create_access_token(user_id=user.id)
-
+    refresh_token = create_refresh_token(user_id=user.id)
     # 라우터에서 LoginResponse 형태로 변환되어 응답
-    return {"access_token": access_token, "token_type": "bearer", "user": user}
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": user,
+    }
+
+
+async def refresh_access_token(refresh_token: str):
+    user_id = verify_refresh_token(refresh_token)
+
+    new_access_token = create_access_token(user_id=user_id)
+
+    return {"access_token": new_access_token, "token_type": "bearer"}
