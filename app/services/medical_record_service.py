@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.repositories.medical_record_repository import (
+    count_medical_record_list_by_patient_id,
     create_medical_record_with_xray,
     get_medical_record_by_chart_number,
+    get_medical_record_list_by_patient_id,
 )
 from app.repositories.patient_repository import get_patient_by_id
 
@@ -100,4 +102,73 @@ async def register_medical_record(
         "xray_image": saved_xray_image,
         "created_at": medical_record.created_at,
         "updated_at": medical_record.updated_at,
+    }
+
+
+# 진료기록 목록용 증상 문자열을 만드는 함수
+# 역할:
+# - 증상이 100자를 초과하면 말줄임표를 붙여 목록에서 보기 좋게 만든다.
+def summarize_symptoms(symptoms: str) -> str:
+    if len(symptoms) <= 100:
+        return symptoms
+
+    return f"{symptoms[:100]}..."
+
+
+# 진료기록 목록 조회 비즈니스 로직 함수
+# 역할:
+# - 환자 존재 여부를 확인한다.
+# - page, size 값을 검증한다.
+# - 해당 환자의 진료기록 목록과 전체 개수를 반환한다.
+async def get_medical_records(
+    db: AsyncSession,
+    patient_id: int,
+    page: int = 1,
+    size: int = 20,
+):
+    patient = await get_patient_by_id(db, patient_id)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="환자를 찾을 수 없습니다.",
+        )
+
+    if page < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="page는 1 이상이어야 합니다.",
+        )
+
+    if size < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="size는 1 이상이어야 합니다.",
+        )
+
+    medical_records = await get_medical_record_list_by_patient_id(
+        db=db,
+        patient_id=patient_id,
+        page=page,
+        size=size,
+    )
+
+    total = await count_medical_record_list_by_patient_id(
+        db=db,
+        patient_id=patient_id,
+    )
+
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": [
+            {
+                "id": record.id,
+                "chart_number": record.chart_number,
+                "symptoms": summarize_symptoms(record.symptoms),
+                "created_at": record.created_at,
+            }
+            for record in medical_records
+        ],
     }

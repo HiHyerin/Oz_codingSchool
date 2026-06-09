@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.medical_record import MedicalRecord
@@ -57,3 +57,42 @@ async def create_medical_record_with_xray(
     await db.refresh(xray_image)
 
     return medical_record, xray_image
+
+
+# 특정 환자의 진료기록 목록을 조회하는 함수
+# 역할:
+# - patient_id에 해당하는 진료기록만 조회한다.
+# - page, size 값으로 페이지네이션을 처리한다.
+async def get_medical_record_list_by_patient_id(
+    db: AsyncSession,
+    patient_id: int,
+    page: int = 1,
+    size: int = 20,
+) -> list[MedicalRecord]:
+    query = (
+        select(MedicalRecord)
+        .where(MedicalRecord.patient_id == patient_id)
+        .order_by(MedicalRecord.id.desc())
+        .offset((page - 1) * size)
+        .limit(size)
+    )
+
+    result = await db.execute(query)
+
+    return list(result.scalars().all())
+
+
+# 특정 환자의 진료기록 전체 개수를 조회하는 함수
+# 역할:
+# - 진료기록 목록 조회 응답의 total 값을 계산한다.
+async def count_medical_record_list_by_patient_id(
+    db: AsyncSession,
+    patient_id: int,
+) -> int:
+    result = await db.execute(
+        select(func.count(MedicalRecord.id)).where(
+            MedicalRecord.patient_id == patient_id
+        )
+    )
+
+    return result.scalar_one()

@@ -7,7 +7,10 @@ from app.core.db.databases import async_get_db
 from app.core.dependencies import get_current_staff_user
 from app.models.enums import Gender
 from app.models.user import User
-from app.schemas.medical_record import MedicalRecordCreateResponse
+from app.schemas.medical_record import (
+    MedicalRecordCreateResponse,
+    MedicalRecordListResponse,
+)
 from app.schemas.patient import (
     PatientCreate,
     PatientListResponse,
@@ -21,7 +24,10 @@ from app.services.patient_service import (
     register_patient,
     update_patient_detail,
 )
-from app.services.medical_record_service import register_medical_record
+from app.services.medical_record_service import (
+    get_medical_records,
+    register_medical_record,
+)
 
 router = APIRouter(
     prefix="/patients",
@@ -189,4 +195,32 @@ async def register_medical_record_handler(
         shooting_datetime=shooting_datetime,
         xray_image=xray_image,
         current_user=current_user,
+    )
+
+
+# 진료기록 목록 조회 API endpoint
+# 역할:
+# - STAFF 또는 ADMIN 권한 사용자가 특정 환자의 진료기록 목록을 조회한다.
+@router.get(
+    "/{patient_id}/medical-records/",
+    response_model=MedicalRecordListResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_medical_records_handler(
+    # 진료기록 목록을 조회할 환자 고유 ID
+    patient_id: int,
+    # 페이지 번호
+    page: int = Query(default=1, ge=1),
+    # 페이지당 조회 수
+    size: int = Query(default=20, ge=1),
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # STAFF 또는 ADMIN 권한 인증/인가
+    current_user: User = Depends(get_current_staff_user),
+):
+    return await get_medical_records(
+        db=db,
+        patient_id=patient_id,
+        page=page,
+        size=size,
     )

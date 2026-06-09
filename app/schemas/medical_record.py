@@ -69,3 +69,37 @@ class MedicalRecordCreateResponse(BaseModel):
 
     # 수정일시
     updated_at: datetime | None = None
+
+
+# 진료기록 목록의 개별 항목 응답 클래스
+# 역할:
+# - 환자 상세 화면의 진료기록 목록에서 보여줄 필드만 정의한다.
+class MedicalRecordListItemResponse(BaseModel):
+    # 진료기록 고유 ID
+    id: int
+
+    # 진료 차트 넘버
+    chart_number: str
+
+    # 증상 요약
+    symptoms: str
+
+    # 생성일시
+    created_at: datetime
+
+
+# 진료기록 목록 조회 응답 클래스
+# 역할:
+# - 특정 환자의 진료기록 목록과 페이지네이션 정보를 응답한다.
+class MedicalRecordListResponse(BaseModel):
+    # 해당 환자의 전체 진료기록 수
+    total: int
+
+    # 현재 페이지 번호
+    page: int
+
+    # 페이지당 조회 수
+    size: int
+
+    # 진료기록 목록
+    items: list[MedicalRecordListItemResponse]
