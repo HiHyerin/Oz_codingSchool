@@ -130,3 +130,15 @@ async def update_patient(
     await db.refresh(patient)
 
     return patient
+
+
+# 환자 정보를 삭제하는 함수
+# 역할:
+# - Patient 객체를 DB에서 삭제한다.
+# - Patient 모델 relationship cascade 설정에 따라 관련 진료기록도 함께 삭제된다.
+async def delete_patient(
+    db: AsyncSession,
+    patient: Patient,
+) -> None:
+    await db.delete(patient)
+    await db.commit()

@@ -5,6 +5,7 @@ from app.models.enums import Gender
 from app.repositories.patient_repository import (
     count_patient_list,
     create_patient,
+    delete_patient,
     get_patient_by_id,
     get_patient_list,
     update_patient,
@@ -180,4 +181,27 @@ async def update_patient_detail(
         db=db,
         patient=patient,
         update_data=update_data,
+    )
+
+
+# 환자 정보 삭제 비즈니스 로직 함수
+# 역할:
+# - 삭제 대상 환자가 존재하는지 확인한다.
+# - 존재하지 않으면 404 에러를 발생시킨다.
+# - 존재하면 환자와 관련 데이터를 삭제한다.
+async def delete_patient_detail(
+    db: AsyncSession,
+    patient_id: int,
+) -> None:
+    patient = await get_patient_by_id(db, patient_id)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="환자를 찾을 수 없습니다.",
+        )
+
+    await delete_patient(
+        db=db,
+        patient=patient,
     )

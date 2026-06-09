@@ -12,6 +12,7 @@ from app.schemas.patient import (
     PatientUpdate,
 )
 from app.services.patient_service import (
+    delete_patient_detail,
     get_patient_detail,
     get_patients,
     register_patient,
@@ -127,3 +128,26 @@ async def update_patient_detail_handler(
         patient_id=patient_id,
         request=request,
     )
+
+
+# 환자 정보 삭제 API endpoint
+# 역할:
+# - STAFF 또는 ADMIN 권한 사용자가 특정 환자와 관련 데이터를 삭제한다.
+@router.delete(
+    "/{patient_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_patient_detail_handler(
+    # 삭제할 환자 고유 ID
+    patient_id: int,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # STAFF 또는 ADMIN 권한 인증/인가
+    current_user: User = Depends(get_current_staff_user),
+):
+    await delete_patient_detail(
+        db=db,
+        patient_id=patient_id,
+    )
+
+    return None
