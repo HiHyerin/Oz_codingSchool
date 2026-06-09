@@ -103,3 +103,21 @@ class UserRoleUpdateResponse(BaseModel):
     # 수정 일시
     # updated_at이 아직 없을 수 있으므로 None 허용
     updated_at: datetime | None = None
+
+
+# 마이페이지 조회 응답 클래스
+# 역할:
+# - 로그인 사용자가 본인의 정보를 조회할 때 응답 구조를 정의한다.
+# - 비밀번호, hashed_password 같은 민감한 정보는 포함하지 않는다.
+class MyPageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    email: EmailStr
+    name: str
+    department: Department
+    gender: Gender
+    phone_number: str
+    role: Role
+
+    # 계정 활성화 여부
+    is_active: bool

@@ -2,14 +2,15 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db.databases import async_get_db
-from app.core.dependencies import get_current_admin_user
+from app.core.dependencies import get_current_admin_user, get_current_user
 from app.models.user import User
 from app.schemas.user import (
     UserListResponse,
     UserRoleUpdateRequest,
     UserRoleUpdateResponse,
 )
-from app.services.user_service import get_users, change_user_role
+from app.services.user_service import get_users, change_user_role, get_my_page
+from app.schemas.user import MyPageResponse
 
 router = APIRouter(
     prefix="/users",
@@ -51,6 +52,24 @@ async def get_users_handler(
         page=page,
         size=size,
     )
+
+
+# 마이페이지 조회 API endpoint
+# 역할:
+# - Authorization 헤더의 access_token을 검증한다.
+# - 로그인한 사용자의 본인 정보를 반환한다.
+# - PENDING, STAFF, ADMIN 모두 접근 가능하다.
+@router.get(
+    "/me/",
+    response_model=MyPageResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_my_page_handler(
+    # 현재 로그인 사용자
+    # access_token이 없거나 잘못되면 401 에러가 발생한다.
+    current_user: User = Depends(get_current_user),
+):
+    return await get_my_page(current_user)
 
 
 # 회원 권한 변경 API endpoint

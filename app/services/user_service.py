@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import Department
 from app.models.enums import Role
+from app.models.user import User
 from app.repositories.user_repository import (
     count_user_list,
     get_user_list,
@@ -103,3 +104,19 @@ async def change_user_role(
     )
 
     return updated_user
+
+
+# 마이페이지 조회 비즈니스 로직 함수
+# 역할:
+# - 현재 로그인한 사용자의 정보를 반환한다.
+# - 현재 사용자 조회와 인증 검증은 get_current_user dependency에서 이미 처리된다.
+#
+# 매개변수:
+# - current_user: access_token 검증 후 DB에서 조회된 현재 로그인 사용자
+#
+# 반환값:
+# - 현재 로그인한 User 객체
+# 비고:
+# - 현재는 사실 의미없는 함수지만 나중에 확장가능성을 생각하여 만들어 놓았다.
+async def get_my_page(current_user: User) -> User:
+    return current_user
