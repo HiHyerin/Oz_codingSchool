@@ -13,6 +13,7 @@ from app.repositories.user_repository import (
     update_user_role,
     get_user_by_phone_number,
     update_user_profile,
+    delete_user,
 )
 from app.schemas.user import PasswordChangeRequest, UserRoleUpdateRequest
 from app.schemas.user import MyPageUpdateRequest
@@ -225,3 +226,17 @@ async def change_my_password(
     return {
         "detail": "비밀번호가 변경되었습니다.",
     }
+
+
+# 회원 탈퇴 비즈니스 로직 함수
+# 역할:
+# - 현재 로그인 사용자의 계정을 DB에서 삭제한다.
+# - refresh_token 쿠키 삭제는 Response 객체가 필요한 API 계층에서 처리한다.
+async def delete_my_account(
+    db: AsyncSession,
+    current_user: User,
+) -> None:
+    await delete_user(
+        db=db,
+        user=current_user,
+    )

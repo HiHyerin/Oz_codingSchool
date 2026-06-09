@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db.databases import async_get_db
@@ -20,6 +20,7 @@ from app.services.user_service import (
     change_user_role,
     get_my_page,
     update_my_page,
+    delete_my_account,
 )
 from app.schemas.user import MyPageResponse
 
@@ -131,6 +132,41 @@ async def change_my_password_handler(
         current_user=current_user,
         request=request,
     )
+
+
+# 회원 탈퇴 API endpoint
+# 역할:
+# - Authorization 헤더의 access_token을 검증한다.
+# - 로그인한 사용자의 본인 계정을 DB에서 삭제한다.
+# - refresh_token 쿠키를 삭제한다.
+# - 성공 시 204 No Content를 반환한다.
+@router.delete(
+    "/me/",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_my_account_handler(
+    # 쿠키 삭제를 위해 Response 객체를 받는다.
+    response: Response,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # 현재 로그인 사용자
+    current_user: User = Depends(get_current_user),
+):
+    # DB에서 현재 사용자 삭제
+    await delete_my_account(
+        db=db,
+        current_user=current_user,
+    )
+
+    # refresh_token 쿠키 삭제
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        samesite="lax",
+    )
+
+    # 204 No Content는 응답 body를 반환하지 않는다.
+    return None
 
 
 # 회원 권한 변경 API endpoint

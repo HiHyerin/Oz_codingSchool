@@ -172,3 +172,20 @@ async def update_user_password(
     await db.refresh(user)
 
     return user
+
+
+# 사용자를 DB에서 삭제하는 함수
+# 역할:
+# - 현재 로그인한 User 객체를 DB에서 삭제한다.
+# - 회원 탈퇴 API에서 사용한다.
+
+
+async def delete_user(
+    db: AsyncSession,
+    user: User,
+) -> None:
+    # User 객체 삭제 예약
+    await db.delete(user)
+
+    # 삭제 내용 DB 반영
+    await db.commit()
