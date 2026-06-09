@@ -7,8 +7,9 @@ from app.repositories.patient_repository import (
     create_patient,
     get_patient_by_id,
     get_patient_list,
+    update_patient,
 )
-from app.schemas.patient import PatientCreate
+from app.schemas.patient import PatientCreate, PatientUpdate
 
 
 # 환자 정보 등록 비즈니스 로직 함수
@@ -138,3 +139,45 @@ async def get_patient_detail(
         )
 
     return patient
+
+
+# 환자 정보 수정 비즈니스 로직 함수
+# 역할:
+# - 수정 대상 환자가 존재하는지 확인한다.
+# - 요청 body에 실제 수정 필드가 있는지 검증한다.
+# - 요구사항에 따라 이름과 연락처만 수정한다.
+async def update_patient_detail(
+    db: AsyncSession,
+    patient_id: int,
+    request: PatientUpdate,
+):
+    patient = await get_patient_by_id(db, patient_id)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="환자를 찾을 수 없습니다.",
+        )
+
+    update_data = request.model_dump(exclude_unset=True)
+
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="수정 가능한 필드가 없습니다.",
+        )
+
+    if "phone" in update_data:
+        phone = update_data["phone"]
+
+        if not phone.isdigit() or len(phone) != 11:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="연락처는 숫자 11자리여야 합니다.",
+            )
+
+    return await update_patient(
+        db=db,
+        patient=patient,
+        update_data=update_data,
+    )

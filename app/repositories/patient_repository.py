@@ -112,3 +112,21 @@ async def get_patient_by_id(
     )
 
     return result.scalar_one_or_none()
+
+
+# 환자 정보를 수정하는 함수
+# 역할:
+# - 전달받은 필드만 Patient 객체에 반영한다.
+# - 변경사항을 DB에 저장한 뒤 최신 Patient 객체를 반환한다.
+async def update_patient(
+    db: AsyncSession,
+    patient: Patient,
+    update_data: dict,
+) -> Patient:
+    for field, value in update_data.items():
+        setattr(patient, field, value)
+
+    await db.commit()
+    await db.refresh(patient)
+
+    return patient

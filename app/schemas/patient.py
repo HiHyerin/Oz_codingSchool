@@ -20,9 +20,10 @@ class PatientCreate(PatientBase):
 
 # 환자 정보 수정 요청 클래스
 class PatientUpdate(BaseModel):
+    # 변경할 환자 이름
     name: str | None = None
-    age: int | None = None
-    gender: Gender | None = None
+
+    # 변경할 환자 연락처
     phone: str | None = None
 
 
