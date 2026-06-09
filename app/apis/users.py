@@ -8,8 +8,16 @@ from app.schemas.user import (
     UserListResponse,
     UserRoleUpdateRequest,
     UserRoleUpdateResponse,
+    MyPageResponse,
+    MyPageUpdateRequest,
+    MyPageUpdateResponse,
 )
-from app.services.user_service import get_users, change_user_role, get_my_page
+from app.services.user_service import (
+    get_users,
+    change_user_role,
+    get_my_page,
+    update_my_page,
+)
 from app.schemas.user import MyPageResponse
 
 router = APIRouter(
@@ -70,6 +78,31 @@ async def get_my_page_handler(
     current_user: User = Depends(get_current_user),
 ):
     return await get_my_page(current_user)
+
+
+# 회원 정보 수정 API endpoint
+# 역할:
+# - Authorization 헤더의 access_token을 검증한다.
+# - 로그인한 사용자의 본인 정보만 수정한다.
+# - department, phone_number만 수정 가능하다.
+@router.patch(
+    "/me/",
+    response_model=MyPageUpdateResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_my_page_handler(
+    # 수정할 회원 정보
+    request: MyPageUpdateRequest,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # 현재 로그인 사용자
+    current_user: User = Depends(get_current_user),
+):
+    return await update_my_page(
+        db=db,
+        current_user=current_user,
+        request=request,
+    )
 
 
 # 회원 권한 변경 API endpoint

@@ -127,13 +127,30 @@ async def update_user_role(
     user: User,
     role: Role,
 ) -> User:
-    # User 객체의 role 필드 변경
     user.role = role
-
-    # 변경사항 DB 반영
     await db.commit()
 
     # DB에 반영된 최신 값 다시 로드
+    await db.refresh(user)
+
+    return user
+
+
+# 현재 로그인 사용자의 정보를 수정하는 함수
+# 역할:
+# - User 객체의 수정 가능한 필드만 변경한다.
+# - 변경사항을 DB에 반영한다.
+# - 최신 User 객체를 반환한다.
+async def update_user_profile(
+    db: AsyncSession,
+    user: User,
+    update_data: dict,
+) -> User:
+    # 전달받은 필드만 User 객체에 반영
+    for field, value in update_data.items():
+        setattr(user, field, value)
+
+    await db.commit()
     await db.refresh(user)
 
     return user

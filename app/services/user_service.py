@@ -9,8 +9,11 @@ from app.repositories.user_repository import (
     get_user_list,
     get_user_by_id,
     update_user_role,
+    get_user_by_phone_number,
+    update_user_profile,
 )
 from app.schemas.user import UserRoleUpdateRequest
+from app.schemas.user import MyPageUpdateRequest
 
 
 # 회원 목록 조회 비즈니스 로직 함수
@@ -120,3 +123,52 @@ async def change_user_role(
 # - 현재는 사실 의미없는 함수지만 나중에 확장가능성을 생각하여 만들어 놓았다.
 async def get_my_page(current_user: User) -> User:
     return current_user
+
+
+# 회원 정보 수정 비즈니스 로직 함수
+async def update_my_page(
+    db: AsyncSession,
+    current_user: User,
+    request: MyPageUpdateRequest,
+):
+    # exclude_unset=True:
+    # 요청 body에 실제로 들어온 필드만 딕셔너리로 만든다.
+    #
+    # 예:
+    # body가 {"department": "RESEARCH"}이면
+    # {"department": Department.RESEARCH}만 들어간다.
+    update_data = request.model_dump(exclude_unset=True)
+
+    # 수정할 필드가 하나도 없으면 400 에러
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="수정 가능한 필드가 없습니다.",
+        )
+
+    # 휴대폰 번호 변경 요청이 있을 때만 중복 확인
+    if "phone_number" in update_data:
+        new_phone_number = update_data["phone_number"]
+
+        # 현재 번호와 같은 번호로 요청한 경우는 중복 검사 없이 허용
+        if new_phone_number != current_user.phone_number:
+            existing_phone_user = await get_user_by_phone_number(
+                db,
+                new_phone_number,
+            )
+
+            # 다른 사용자가 이미 사용 중인 번호면 400 에러
+            if existing_phone_user is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="이미 사용 중인 휴대폰 번호입니다.",
+                )
+
+    # repository를 통해 DB 수정
+    updated_user = await update_user_profile(
+        db=db,
+        user=current_user,
+        update_data=update_data,
+    )
+
+    return updated_user

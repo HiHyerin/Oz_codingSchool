@@ -121,3 +121,24 @@ class MyPageResponse(BaseModel):
 
     # 계정 활성화 여부
     is_active: bool
+
+
+# 마이페이지 회원 정보 수정 요청 클래스
+class MyPageUpdateRequest(BaseModel):
+    # 허용 값: RESEARCH, MEDICAL, DEV
+    department: Department | None = None
+    phone_number: str | None = None
+
+
+# 마이페이지 회원 정보 수정 응답 클래스
+class MyPageUpdateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    email: EmailStr
+    name: str
+    department: Department
+    gender: Gender
+    phone_number: str
+    role: Role
+    is_active: bool
+    updated_at: datetime | None = None
