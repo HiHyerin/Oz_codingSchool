@@ -10,6 +10,7 @@ from app.repositories.medical_record_repository import (
     count_medical_record_list_by_patient_id,
     create_medical_record_with_xray,
     get_medical_record_by_chart_number,
+    get_medical_record_detail,
     get_medical_record_list_by_patient_id,
 )
 from app.repositories.patient_repository import get_patient_by_id
@@ -172,3 +173,36 @@ async def get_medical_records(
             for record in medical_records
         ],
     }
+
+
+# 진료기록 상세 조회 비즈니스 로직 함수
+# 역할:
+# - 환자 존재 여부를 먼저 확인한다.
+# - 요청한 환자에게 속한 진료기록인지 확인한다.
+# - 진료기록과 연결된 X-Ray 이미지 목록을 반환한다.
+async def get_medical_record_detail_info(
+    db: AsyncSession,
+    patient_id: int,
+    record_id: int,
+):
+    patient = await get_patient_by_id(db, patient_id)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="환자를 찾을 수 없습니다.",
+        )
+
+    medical_record = await get_medical_record_detail(
+        db=db,
+        patient_id=patient_id,
+        record_id=record_id,
+    )
+
+    if medical_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="진료기록을 찾을 수 없습니다.",
+        )
+
+    return medical_record

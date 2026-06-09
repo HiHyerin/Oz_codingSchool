@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.medical_record import MedicalRecord
 from app.models.xray_image import XrayImage
@@ -96,3 +97,24 @@ async def count_medical_record_list_by_patient_id(
     )
 
     return result.scalar_one()
+
+
+# 진료기록 상세 정보를 조회하는 함수
+# 역할:
+# - record_id와 patient_id가 모두 일치하는 진료기록을 조회한다.
+# - 상세 응답에 필요한 X-Ray 이미지 목록을 함께 로딩한다.
+async def get_medical_record_detail(
+    db: AsyncSession,
+    patient_id: int,
+    record_id: int,
+) -> MedicalRecord | None:
+    result = await db.execute(
+        select(MedicalRecord)
+        .options(selectinload(MedicalRecord.xray_images))
+        .where(
+            MedicalRecord.id == record_id,
+            MedicalRecord.patient_id == patient_id,
+        )
+    )
+
+    return result.scalar_one_or_none()

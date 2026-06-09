@@ -103,3 +103,50 @@ class MedicalRecordListResponse(BaseModel):
 
     # 진료기록 목록
     items: list[MedicalRecordListItemResponse]
+
+
+# 진료기록 상세 응답의 X-Ray 이미지 정보 클래스
+# 역할:
+# - 진료기록 상세 화면에서 표시할 X-Ray 이미지 정보를 정의한다.
+class MedicalRecordDetailXrayImageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    # X-Ray 이미지 고유 ID
+    id: int
+
+    # 서버에 저장된 이미지 접근 URL
+    image_url: str
+
+    # X-Ray 촬영 일시
+    shooting_datetime: datetime
+
+    # 이미지 생성일시
+    created_at: datetime
+
+
+# 진료기록 상세 조회 응답 클래스
+# 역할:
+# - 진료기록 상세 정보와 연결된 X-Ray 이미지 목록을 응답한다.
+class MedicalRecordDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    # 진료기록 고유 ID
+    id: int
+
+    # 환자 고유 ID
+    patient_id: int
+
+    # 진료 차트 넘버
+    chart_number: str
+
+    # 진료된 증상
+    symptoms: str
+
+    # 연결된 X-Ray 이미지 목록
+    xray_images: list[MedicalRecordDetailXrayImageResponse]
+
+    # 생성일시
+    created_at: datetime
+
+    # 수정일시
+    updated_at: datetime | None = None

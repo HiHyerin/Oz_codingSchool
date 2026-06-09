@@ -9,6 +9,7 @@ from app.models.enums import Gender
 from app.models.user import User
 from app.schemas.medical_record import (
     MedicalRecordCreateResponse,
+    MedicalRecordDetailResponse,
     MedicalRecordListResponse,
 )
 from app.schemas.patient import (
@@ -25,6 +26,7 @@ from app.services.patient_service import (
     update_patient_detail,
 )
 from app.services.medical_record_service import (
+    get_medical_record_detail_info,
     get_medical_records,
     register_medical_record,
 )
@@ -223,4 +225,29 @@ async def get_medical_records_handler(
         patient_id=patient_id,
         page=page,
         size=size,
+    )
+
+
+# 진료기록 상세 조회 API endpoint
+# 역할:
+# - STAFF 또는 ADMIN 권한 사용자가 특정 환자의 진료기록 상세 정보를 조회한다.
+@router.get(
+    "/{patient_id}/medical-records/{record_id}/",
+    response_model=MedicalRecordDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_medical_record_detail_handler(
+    # 환자 고유 ID
+    patient_id: int,
+    # 진료기록 고유 ID
+    record_id: int,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # STAFF 또는 ADMIN 권한 인증/인가
+    current_user: User = Depends(get_current_staff_user),
+):
+    return await get_medical_record_detail_info(
+        db=db,
+        patient_id=patient_id,
+        record_id=record_id,
     )
