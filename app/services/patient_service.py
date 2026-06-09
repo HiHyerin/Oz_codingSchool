@@ -5,6 +5,7 @@ from app.models.enums import Gender
 from app.repositories.patient_repository import (
     count_patient_list,
     create_patient,
+    get_patient_by_id,
     get_patient_list,
 )
 from app.schemas.patient import PatientCreate
@@ -117,3 +118,23 @@ async def get_patients(
         "size": size,
         "items": patients,
     }
+
+
+# 환자 정보 상세 조회 비즈니스 로직 함수
+# 역할:
+# - patient_id에 해당하는 환자가 존재하는지 확인한다.
+# - 존재하지 않으면 404 에러를 발생시킨다.
+# - 존재하면 Patient 객체를 반환한다.
+async def get_patient_detail(
+    db: AsyncSession,
+    patient_id: int,
+):
+    patient = await get_patient_by_id(db, patient_id)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="환자를 찾을 수 없습니다.",
+        )
+
+    return patient

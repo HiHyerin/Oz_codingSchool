@@ -6,7 +6,11 @@ from app.core.dependencies import get_current_staff_user
 from app.models.enums import Gender
 from app.models.user import User
 from app.schemas.patient import PatientCreate, PatientListResponse, PatientRead
-from app.services.patient_service import get_patients, register_patient
+from app.services.patient_service import (
+    get_patient_detail,
+    get_patients,
+    register_patient,
+)
 
 router = APIRouter(
     prefix="/patients",
@@ -69,4 +73,26 @@ async def get_patients_handler(
         max_age=max_age,
         page=page,
         size=size,
+    )
+
+
+# 환자 정보 상세 조회 API endpoint
+# 역할:
+# - STAFF 또는 ADMIN 권한 사용자가 특정 환자의 상세 정보를 조회한다.
+@router.get(
+    "/{patient_id}/",
+    response_model=PatientRead,
+    status_code=status.HTTP_200_OK,
+)
+async def get_patient_detail_handler(
+    # 조회할 환자 고유 ID
+    patient_id: int,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # STAFF 또는 ADMIN 권한 인증/인가
+    current_user: User = Depends(get_current_staff_user),
+):
+    return await get_patient_detail(
+        db=db,
+        patient_id=patient_id,
     )

@@ -98,3 +98,17 @@ async def count_patient_list(
     result = await db.execute(query)
 
     return result.scalar_one()
+
+
+# 환자 고유 ID로 환자를 조회하는 함수
+# 역할:
+# - 환자 상세 조회, 수정, 삭제 대상이 실제 존재하는지 확인한다.
+async def get_patient_by_id(
+    db: AsyncSession,
+    patient_id: int,
+) -> Patient | None:
+    result = await db.execute(
+        select(Patient).where(Patient.id == patient_id)
+    )
+
+    return result.scalar_one_or_none()
