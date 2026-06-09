@@ -42,29 +42,13 @@ class UserRead(UserBase):
 class UserListItemResponse(BaseModel):
     # SQLAlchemy User 객체를 Pydantic 응답 모델로 변환할 수 있게 한다.
     model_config = ConfigDict(from_attributes=True)
-
-    # 사용자 고유 ID
     id: int
-
-    # 사용자 이메일
     email: EmailStr
-
-    # 사용자 이름
     name: str
-
-    # 사용자 부서
     department: Department
-
-    # 사용자 성별
     gender: Gender
-
-    # 사용자 휴대폰 번호
     phone_number: str
-
-    # 사용자 권한
     role: Role
-
-    # 계정 활성화 여부
     is_active: bool
 
 
@@ -142,3 +126,14 @@ class MyPageUpdateResponse(BaseModel):
     role: Role
     is_active: bool
     updated_at: datetime | None = None
+
+
+# 비밀번호 변경 요청 클래스
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+# 비밀번호 변경 응답 클래스
+class PasswordChangeResponse(BaseModel):
+    detail: str

@@ -154,3 +154,21 @@ async def update_user_profile(
     await db.refresh(user)
 
     return user
+
+
+# 사용자 비밀번호를 변경하는 함수
+# 역할:
+# - User 객체의 hashed_password 값을 새 해시 비밀번호로 변경한다.
+# - 변경사항을 DB에 저장한다.
+async def update_user_password(
+    db: AsyncSession,
+    user: User,
+    hashed_password: str,
+) -> User:
+    # 새 해시 비밀번호 적용
+    user.hashed_password = hashed_password
+
+    await db.commit()
+    await db.refresh(user)
+
+    return user

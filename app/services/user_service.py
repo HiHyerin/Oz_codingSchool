@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password, verify_password
 from app.models.enums import Department
 from app.models.enums import Role
 from app.models.user import User
@@ -8,11 +9,12 @@ from app.repositories.user_repository import (
     count_user_list,
     get_user_list,
     get_user_by_id,
+    update_user_password,
     update_user_role,
     get_user_by_phone_number,
     update_user_profile,
 )
-from app.schemas.user import UserRoleUpdateRequest
+from app.schemas.user import PasswordChangeRequest, UserRoleUpdateRequest
 from app.schemas.user import MyPageUpdateRequest
 
 
@@ -172,3 +174,54 @@ async def update_my_page(
     )
 
     return updated_user
+
+
+# 비밀번호 변경 비즈니스 로직 함수
+# 역할:
+# - 현재 비밀번호가 맞는지 검증한다.
+# - 새 비밀번호가 기존 비밀번호와 같은지 검증한다.
+# - 새 비밀번호를 해싱해서 DB에 저장한다.
+async def change_my_password(
+    db: AsyncSession,
+    current_user: User,
+    request: PasswordChangeRequest,
+):
+    # 입력한 기존 비밀번호가 DB의 해시 비밀번호와 일치하는지 확인
+    is_current_password_valid = verify_password(
+        request.current_password,
+        current_user.hashed_password,
+    )
+
+    # 기존 비밀번호가 틀리면 400 에러
+    if not is_current_password_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="기존 비밀번호가 일치하지 않습니다.",
+        )
+
+    # 새 비밀번호가 기존 비밀번호와 같은지 확인
+    is_same_as_current_password = verify_password(
+        request.new_password,
+        current_user.hashed_password,
+    )
+
+    # 새 비밀번호가 기존 비밀번호와 같으면 400 에러
+    if is_same_as_current_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="새 비밀번호는 기존 비밀번호와 달라야 합니다.",
+        )
+
+    # 새 비밀번호 해싱
+    new_hashed_password = hash_password(request.new_password)
+
+    # DB에 새 해시 비밀번호 저장
+    await update_user_password(
+        db=db,
+        user=current_user,
+        hashed_password=new_hashed_password,
+    )
+
+    return {
+        "detail": "비밀번호가 변경되었습니다.",
+    }

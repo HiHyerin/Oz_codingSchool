@@ -5,6 +5,8 @@ from app.core.db.databases import async_get_db
 from app.core.dependencies import get_current_admin_user, get_current_user
 from app.models.user import User
 from app.schemas.user import (
+    PasswordChangeRequest,
+    PasswordChangeResponse,
     UserListResponse,
     UserRoleUpdateRequest,
     UserRoleUpdateResponse,
@@ -13,6 +15,7 @@ from app.schemas.user import (
     MyPageUpdateResponse,
 )
 from app.services.user_service import (
+    change_my_password,
     get_users,
     change_user_role,
     get_my_page,
@@ -99,6 +102,31 @@ async def update_my_page_handler(
     current_user: User = Depends(get_current_user),
 ):
     return await update_my_page(
+        db=db,
+        current_user=current_user,
+        request=request,
+    )
+
+
+# 비밀번호 변경 API endpoint
+# 역할:
+# - Authorization 헤더의 access_token을 검증한다.
+# - 로그인한 사용자의 기존 비밀번호를 확인한다.
+# - 검증 성공 시 새 비밀번호로 변경한다.
+@router.patch(
+    "/me/password/",
+    response_model=PasswordChangeResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def change_my_password_handler(
+    # 기존 비밀번호와 새 비밀번호
+    request: PasswordChangeRequest,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # 현재 로그인 사용자
+    current_user: User = Depends(get_current_user),
+):
+    return await change_my_password(
         db=db,
         current_user=current_user,
         request=request,
