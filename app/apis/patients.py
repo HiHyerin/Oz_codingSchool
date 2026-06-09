@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, Query, status
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db.databases import async_get_db
 from app.core.dependencies import get_current_staff_user
 from app.models.enums import Gender
 from app.models.user import User
+from app.schemas.medical_record import MedicalRecordCreateResponse
 from app.schemas.patient import (
     PatientCreate,
     PatientListResponse,
@@ -18,6 +21,7 @@ from app.services.patient_service import (
     register_patient,
     update_patient_detail,
 )
+from app.services.medical_record_service import register_medical_record
 
 router = APIRouter(
     prefix="/patients",
@@ -151,3 +155,38 @@ async def delete_patient_detail_handler(
     )
 
     return None
+
+
+# 진료기록 등록 API endpoint
+# 역할:
+# - STAFF 또는 ADMIN 권한 사용자가 환자의 진료기록과 X-Ray 이미지를 등록한다.
+@router.post(
+    "/{patient_id}/medical-records/",
+    response_model=MedicalRecordCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def register_medical_record_handler(
+    # 진료기록을 등록할 환자 고유 ID
+    patient_id: int,
+    # 진료 차트 넘버
+    chart_number: str = Form(...),
+    # 진료된 증상
+    symptoms: str = Form(...),
+    # X-Ray 촬영 일시
+    shooting_datetime: datetime = Form(...),
+    # 업로드할 흉부 X-Ray 이미지
+    xray_image: UploadFile = File(...),
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # STAFF 또는 ADMIN 권한 인증/인가
+    current_user: User = Depends(get_current_staff_user),
+):
+    return await register_medical_record(
+        db=db,
+        patient_id=patient_id,
+        chart_number=chart_number,
+        symptoms=symptoms,
+        shooting_datetime=shooting_datetime,
+        xray_image=xray_image,
+        current_user=current_user,
+    )
