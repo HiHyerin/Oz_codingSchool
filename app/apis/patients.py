@@ -7,6 +7,7 @@ from app.core.db.databases import async_get_db
 from app.core.dependencies import get_current_staff_user
 from app.models.enums import Gender
 from app.models.user import User
+
 from app.schemas.medical_record import (
     MedicalRecordCreateResponse,
     MedicalRecordDetailResponse,
@@ -18,6 +19,12 @@ from app.schemas.patient import (
     PatientRead,
     PatientUpdate,
 )
+
+from app.schemas.ai_analysis_result import (
+    AiPneumoniaPredictionRequest,
+    AiPneumoniaPredictionResponse,
+)
+
 from app.services.patient_service import (
     delete_patient_detail,
     get_patient_detail,
@@ -30,6 +37,8 @@ from app.services.medical_record_service import (
     get_medical_records,
     register_medical_record,
 )
+
+from app.services.ai_analysis_service import predict_pneumonia_for_medical_record
 
 router = APIRouter(
     prefix="/patients",
@@ -250,4 +259,33 @@ async def get_medical_record_detail_handler(
         db=db,
         patient_id=patient_id,
         record_id=record_id,
+    )
+
+
+# AI 폐렴 예측 API endpoint
+# 역할:
+# - STAFF 또는 ADMIN 권한 사용자가 진료기록의 X-Ray 이미지로 폐렴 예측을 수행한다.
+# - 같은 모델의 예측 결과가 이미 있으면 저장된 결과를 반환한다.
+@router.post(
+    "/{patient_id}/medical-records/{record_id}/ai-analysis/",
+    response_model=AiPneumoniaPredictionResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def predict_pneumonia_handler(
+    # 환자 고유 ID
+    patient_id: int,
+    # 진료기록 고유 ID
+    record_id: int,
+    # 사용할 AI 모델 정보
+    request: AiPneumoniaPredictionRequest,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # STAFF 또는 ADMIN 권한 인증/인가
+    current_user: User = Depends(get_current_staff_user),
+):
+    return await predict_pneumonia_for_medical_record(
+        db=db,
+        patient_id=patient_id,
+        record_id=record_id,
+        request=request,
     )
