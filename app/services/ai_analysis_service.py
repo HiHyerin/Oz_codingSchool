@@ -4,8 +4,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.ai_analysis_result_repository import (
+    count_ai_analysis_result_list_by_record_id,
     create_ai_analysis_result,
     get_ai_analysis_result_by_record_and_model,
+    get_ai_analysis_result_list_by_record_id,
 )
 from app.repositories.medical_record_repository import get_medical_record_detail
 from app.repositories.patient_repository import get_patient_by_id
@@ -132,4 +134,68 @@ async def predict_pneumonia_for_medical_record(
         "is_cached": False,
         "created_at": saved_result.created_at,
         "updated_at": saved_result.updated_at,
+    }
+
+
+# AI 폐렴 예측 결과 목록 조회 비즈니스 로직 함수
+# 역할:
+# - 환자와 진료기록 존재 여부를 확인한다.
+# - page, size 값을 검증한다.
+# - 해당 진료기록의 AI 예측 결과 목록과 전체 개수를 반환한다.
+async def get_ai_analysis_results(
+    db: AsyncSession,
+    patient_id: int,
+    record_id: int,
+    page: int = 1,
+    size: int = 20,
+):
+    patient = await get_patient_by_id(db, patient_id)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="환자를 찾을 수 없습니다.",
+        )
+
+    medical_record = await get_medical_record_detail(
+        db=db,
+        patient_id=patient_id,
+        record_id=record_id,
+    )
+
+    if medical_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="진료기록을 찾을 수 없습니다.",
+        )
+
+    if page < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="page는 1 이상이어야 합니다.",
+        )
+
+    if size < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="size는 1 이상이어야 합니다.",
+        )
+
+    ai_analysis_results = await get_ai_analysis_result_list_by_record_id(
+        db=db,
+        record_id=record_id,
+        page=page,
+        size=size,
+    )
+
+    total = await count_ai_analysis_result_list_by_record_id(
+        db=db,
+        record_id=record_id,
+    )
+
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": ai_analysis_results,
     }

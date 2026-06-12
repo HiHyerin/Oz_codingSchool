@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_analysis_result import AiAnalysisResult
@@ -48,3 +48,41 @@ async def create_ai_analysis_result(
     await db.refresh(result)
 
     return result
+
+
+# record_id로 AI 예측 결과 목록을 조회하는 함수
+# 역할:
+# - 특정 진료기록에 저장된 AI 예측 결과를 페이지네이션하여 조회한다.
+async def get_ai_analysis_result_list_by_record_id(
+    db: AsyncSession,
+    record_id: int,
+    page: int = 1,
+    size: int = 20,
+) -> list[AiAnalysisResult]:
+    query = (
+        select(AiAnalysisResult)
+        .where(AiAnalysisResult.record_id == record_id)
+        .order_by(AiAnalysisResult.id.desc())
+        .offset((page - 1) * size)
+        .limit(size)
+    )
+
+    result = await db.execute(query)
+
+    return list(result.scalars().all())
+
+
+# record_id로 AI 예측 결과 전체 개수를 조회하는 함수
+# 역할:
+# - AI 예측 결과 목록 조회 응답의 total 값을 계산한다.
+async def count_ai_analysis_result_list_by_record_id(
+    db: AsyncSession,
+    record_id: int,
+) -> int:
+    result = await db.execute(
+        select(func.count(AiAnalysisResult.id)).where(
+            AiAnalysisResult.record_id == record_id
+        )
+    )
+
+    return result.scalar_one()

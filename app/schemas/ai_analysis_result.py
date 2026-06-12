@@ -79,3 +79,48 @@ class AiPneumoniaPredictionResponse(BaseModel):
 
     # 수정일시
     updated_at: datetime | None = None
+
+
+# AI 폐렴 예측 결과 목록의 개별 항목 응답 클래스
+# 역할:
+# - 진료기록 상세 페이지의 AI 예측 결과 섹션에서 보여줄 필드를 정의한다.
+class AiAnalysisResultListItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    # AI 예측 결과 고유 ID
+    id: int
+
+    # 진료기록 ID
+    record_id: int
+
+    # 폐렴 여부
+    is_pneumonia: bool
+
+    # 예측 confidence
+    confidence: float
+
+    # Heatmap 이미지 URL
+    heatmap_url: str | None = None
+
+    # 사용한 AI 모델명
+    ai_model: str
+
+    # 예측 수행 일시
+    created_at: datetime
+
+
+# AI 폐렴 예측 결과 목록 조회 응답 클래스
+# 역할:
+# - 특정 진료기록의 AI 예측 결과 목록과 페이지네이션 정보를 응답한다.
+class AiAnalysisResultListResponse(BaseModel):
+    # 해당 진료기록의 전체 AI 예측 결과 수
+    total: int
+
+    # 현재 페이지 번호
+    page: int
+
+    # 페이지당 조회 수
+    size: int
+
+    # AI 예측 결과 목록
+    items: list[AiAnalysisResultListItemResponse]
