@@ -124,3 +124,38 @@ class AiAnalysisResultListResponse(BaseModel):
 
     # AI 예측 결과 목록
     items: list[AiAnalysisResultListItemResponse]
+
+
+# AI 폐렴 예측 결과 상세 조회 응답 클래스
+# 역할:
+# - 특정 AI 예측 결과의 상세 정보를 응답한다.
+class AiAnalysisResultDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    # AI 예측 결과 고유 ID
+    id: int
+
+    # 진료기록 ID
+    record_id: int
+
+    # 폐렴 여부
+    is_pneumonia: bool
+
+    # 예측 라벨
+    # is_pneumonia 값으로 NORMAL/PNEUMONIA를 만들어 응답할 때 사용한다.
+    prediction_label: str
+
+    # 예측 confidence
+    confidence: float
+
+    # Heatmap 이미지 URL
+    heatmap_url: str | None = None
+
+    # 사용한 AI 모델명
+    ai_model: str
+
+    # 예측 수행 일시
+    created_at: datetime
+
+    # 수정일시
+    updated_at: datetime | None = None

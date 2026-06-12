@@ -8,6 +8,7 @@ from app.repositories.ai_analysis_result_repository import (
     create_ai_analysis_result,
     get_ai_analysis_result_by_record_and_model,
     get_ai_analysis_result_list_by_record_id,
+    get_ai_analysis_result_detail,
 )
 from app.repositories.medical_record_repository import get_medical_record_detail
 from app.repositories.patient_repository import get_patient_by_id
@@ -198,4 +199,63 @@ async def get_ai_analysis_results(
         "page": page,
         "size": size,
         "items": ai_analysis_results,
+    }
+
+
+# AI 폐렴 예측 결과 상세 조회 비즈니스 로직 함수
+# 역할:
+# - 환자 존재 여부를 확인한다.
+# - 진료기록 존재 여부를 확인한다.
+# - AI 예측 결과가 해당 진료기록에 속하는지 확인한다.
+# - 상세 응답 dict를 반환한다.
+async def get_ai_analysis_result_detail_info(
+    db: AsyncSession,
+    patient_id: int,
+    record_id: int,
+    analysis_id: int,
+):
+    patient = await get_patient_by_id(db, patient_id)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="환자를 찾을 수 없습니다.",
+        )
+
+    medical_record = await get_medical_record_detail(
+        db=db,
+        patient_id=patient_id,
+        record_id=record_id,
+    )
+
+    if medical_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="진료기록을 찾을 수 없습니다.",
+        )
+
+    ai_analysis_result = await get_ai_analysis_result_detail(
+        db=db,
+        record_id=record_id,
+        analysis_id=analysis_id,
+    )
+
+    if ai_analysis_result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="AI 예측 결과를 찾을 수 없습니다.",
+        )
+
+    return {
+        "id": ai_analysis_result.id,
+        "record_id": ai_analysis_result.record_id,
+        "is_pneumonia": ai_analysis_result.is_pneumonia,
+        "prediction_label": (
+            "PNEUMONIA" if ai_analysis_result.is_pneumonia else "NORMAL"
+        ),
+        "confidence": float(ai_analysis_result.confidence),
+        "heatmap_url": ai_analysis_result.heatmap_url,
+        "ai_model": ai_analysis_result.ai_model,
+        "created_at": ai_analysis_result.created_at,
+        "updated_at": ai_analysis_result.updated_at,
     }

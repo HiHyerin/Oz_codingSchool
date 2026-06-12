@@ -24,6 +24,7 @@ from app.schemas.ai_analysis_result import (
     AiAnalysisResultListResponse,
     AiPneumoniaPredictionRequest,
     AiPneumoniaPredictionResponse,
+    AiAnalysisResultDetailResponse,
 )
 
 from app.services.patient_service import (
@@ -42,6 +43,7 @@ from app.services.medical_record_service import (
 from app.services.ai_analysis_service import (
     get_ai_analysis_results,
     predict_pneumonia_for_medical_record,
+    get_ai_analysis_result_detail_info,
 )
 
 router = APIRouter(
@@ -323,4 +325,32 @@ async def get_ai_analysis_results_handler(
         record_id=record_id,
         page=page,
         size=size,
+    )
+
+
+# AI 폐렴 예측 결과 상세 조회 API endpoint
+# 역할:
+# - STAFF 또는 ADMIN 권한 사용자가 특정 AI 예측 결과의 상세 정보를 조회한다.
+@router.get(
+    "/{patient_id}/medical-records/{record_id}/ai-analysis/{analysis_id}/",
+    response_model=AiAnalysisResultDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_ai_analysis_result_detail_handler(
+    # 환자 고유 ID
+    patient_id: int,
+    # 진료기록 고유 ID
+    record_id: int,
+    # AI 예측 결과 고유 ID
+    analysis_id: int,
+    # DB 세션
+    db: AsyncSession = Depends(async_get_db),
+    # STAFF 또는 ADMIN 권한 인증/인가
+    current_user: User = Depends(get_current_staff_user),
+):
+    return await get_ai_analysis_result_detail_info(
+        db=db,
+        patient_id=patient_id,
+        record_id=record_id,
+        analysis_id=analysis_id,
     )

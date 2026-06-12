@@ -86,3 +86,22 @@ async def count_ai_analysis_result_list_by_record_id(
     )
 
     return result.scalar_one()
+
+
+# analysis_id와 record_id로 AI 예측 결과를 조회하는 함수
+# 역할:
+# - 특정 진료기록에 속한 특정 AI 예측 결과를 조회한다.
+# - analysis_id만으로 조회하지 않고 record_id도 함께 확인해서 다른 진료기록 결과 접근을 막는다.
+async def get_ai_analysis_result_detail(
+    db: AsyncSession,
+    record_id: int,
+    analysis_id: int,
+) -> AiAnalysisResult | None:
+    result = await db.execute(
+        select(AiAnalysisResult).where(
+            AiAnalysisResult.id == analysis_id,
+            AiAnalysisResult.record_id == record_id,
+        )
+    )
+
+    return result.scalar_one_or_none()
