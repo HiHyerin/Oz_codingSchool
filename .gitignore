@@ -21,3 +21,13 @@ envs/
 .env
 
 .python-version
+
+# Uploaded/generated media
+media/
+
+# ML model artifacts
+worker/models/*
+!worker/models/.gitkeep
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
