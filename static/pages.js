@@ -1,82 +1,106 @@
-/**
- * 페이지 렌더링 및 이벤트 핸들러 모음
- */
+const uiMappers = {
+    genderToApi(value) {
+        if (value === 'male') return 'M';
+        if (value === 'female') return 'F';
+        return value;
+    },
+    genderToTemplate(value) {
+        if (value === 'M') return 'male';
+        if (value === 'F') return 'female';
+        return value;
+    },
+    genderToLabel(value) {
+        if (value === 'M' || value === 'male') return 'Male';
+        if (value === 'F' || value === 'female') return 'Female';
+        return value || '-';
+    },
+    departmentToApi(value) {
+        return {
+            'developer': 'DEV',
+            'medical team': 'MEDICAL',
+            'researcher': 'RESEARCH',
+        }[value] || value;
+    },
+    departmentToTemplate(value) {
+        return {
+            DEV: 'developer',
+            MEDICAL: 'medical team',
+            RESEARCH: 'researcher',
+        }[value] || value;
+    },
+    roleToLabel(value) {
+        return {
+            PENDING: 'Pending',
+            STAFF: 'Staff',
+            ADMIN: 'Admin',
+        }[value] || value || '-';
+    },
+};
 
 const pages = {
     async renderHome() {
         const html = await utils.loadTemplate('home');
         if (state.currentPage !== '/' && state.currentPage !== '/home') return;
-        const app = document.getElementById('app');
-        app.innerHTML = html;
-        
+        document.getElementById('app').innerHTML = html;
+
         const actions = document.getElementById('home-actions');
         if (!state.user) {
-            actions.innerHTML = '<button onclick="navigate(\'/login\')">로그인하여 시작하기</button>';
-        } else if (state.user.role === 'pending') {
-            actions.innerHTML = '<p>관리자의 승인을 기다리는 중입니다.</p>';
+            actions.innerHTML = '<button onclick="navigate(\'/login\')">Login to start</button>';
+        } else if (state.user.role === 'PENDING') {
+            actions.innerHTML = '<p>Waiting for admin approval.</p>';
         } else {
-            actions.innerHTML = '<button onclick="navigate(\'/patients\')">환자 목록 보기</button>';
+            actions.innerHTML = '<button onclick="navigate(\'/patients\')">Open patients</button>';
         }
     },
 
     async renderLogin() {
-        const html = await utils.loadTemplate('login');
-        document.getElementById('app').innerHTML = html;
+        document.getElementById('app').innerHTML = await utils.loadTemplate('login');
     },
 
     async renderSignup() {
-        const html = await utils.loadTemplate('signup');
-        document.getElementById('app').innerHTML = html;
-        
+        document.getElementById('app').innerHTML = await utils.loadTemplate('signup');
         const phoneInput = document.getElementById('signup-phone');
-        if (phoneInput) {
-            phoneInput.addEventListener('input', (e) => utils.handlePhoneInput(e));
-        }
+        if (phoneInput) phoneInput.addEventListener('input', (event) => utils.handlePhoneInput(event));
     },
 
     async renderPatients(params = {}) {
         const patients = await apis.getPatients(params);
         const html = await utils.loadTemplate('patients');
         if (state.currentPage !== '/patients') return;
-        const app = document.getElementById('app');
-        app.innerHTML = html;
+        document.getElementById('app').innerHTML = html;
 
-        // 필드 값 복원
         const nameInput = document.getElementById('search-name');
         const genderSelect = document.getElementById('filter-gender');
         const minAgeInput = document.getElementById('filter-min-age');
         const maxAgeInput = document.getElementById('filter-max-age');
 
-        if (nameInput && params.name) nameInput.value = params.name;
-        if (genderSelect && params.gender) genderSelect.value = params.gender;
+        if (nameInput && params.search) nameInput.value = params.search;
+        if (genderSelect && params.gender) genderSelect.value = uiMappers.genderToTemplate(params.gender);
         if (minAgeInput && params.min_age) minAgeInput.value = params.min_age;
         if (maxAgeInput && params.max_age) maxAgeInput.value = params.max_age;
-        
+
         const listBody = document.getElementById('patients-list');
-        if (patients.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">검색 결과가 없습니다.</td></tr>';
+        if (!patients.length) {
+            listBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">No patients found.</td></tr>';
             return;
         }
-        listBody.innerHTML = patients.map(p => `
+
+        listBody.innerHTML = patients.map((patient) => `
             <tr>
-                <td>${p.id}</td>
-                <td>${p.name}</td>
-                <td>${p.age}</td>
-                <td>${p.gender === 'male' ? '남성' : '여성'}</td>
-                <td>${utils.formatPhoneNumber(p.phone_number)}</td>
-                <td><button onclick="navigate('/patients/${p.id}')">상세보기</button></td>
+                <td>${patient.id}</td>
+                <td>${patient.name}</td>
+                <td>${patient.age}</td>
+                <td>${uiMappers.genderToLabel(patient.gender)}</td>
+                <td>${utils.formatPhoneNumber(patient.phone)}</td>
+                <td><button onclick="navigate('/patients/${patient.id}')">Detail</button></td>
             </tr>
         `).join('');
     },
 
     async renderPatientCreate() {
-        const html = await utils.loadTemplate('patient-create');
-        document.getElementById('app').innerHTML = html;
-        
+        document.getElementById('app').innerHTML = await utils.loadTemplate('patient-create');
         const phoneInput = document.getElementById('phone_number');
-        if (phoneInput) {
-            phoneInput.addEventListener('input', (e) => utils.handlePhoneInput(e));
-        }
+        if (phoneInput) phoneInput.addEventListener('input', (event) => utils.handlePhoneInput(event));
     },
 
     async renderPatientDetail(patientId) {
@@ -84,188 +108,168 @@ const pages = {
         const records = await apis.getPatientMedicalRecords(patientId);
         const html = await utils.loadTemplate('patient-detail');
         if (!state.currentPage.startsWith('/patients/')) return;
-        const app = document.getElementById('app');
-        app.innerHTML = html;
-        
-        // 환자 정보 표시
-        document.getElementById('patient-name').innerText = `${patient.name} (${patient.gender === 'male' ? '남성' : '여성'})`;
-        document.getElementById('patient-info').innerText = `나이: ${patient.age}세 | 연락처: ${utils.formatPhoneNumber(patient.phone_number)}`;
-        
-        // 수정 폼 초기값 설정
+        document.getElementById('app').innerHTML = html;
+
+        document.getElementById('patient-name').innerText = `${patient.name} (${uiMappers.genderToLabel(patient.gender)})`;
+        document.getElementById('patient-info').innerText = `Age: ${patient.age} | Phone: ${utils.formatPhoneNumber(patient.phone)}`;
         document.getElementById('update-name').value = patient.name;
-        document.getElementById('update-phone').value = utils.formatPhoneNumber(patient.phone_number);
-        
+        document.getElementById('update-phone').value = utils.formatPhoneNumber(patient.phone);
+
         const updatePhoneInput = document.getElementById('update-phone');
-        if (updatePhoneInput) {
-            updatePhoneInput.addEventListener('input', (e) => utils.handlePhoneInput(e));
-        }
-        
-        // 버튼 이벤트 바인딩
+        if (updatePhoneInput) updatePhoneInput.addEventListener('input', (event) => utils.handlePhoneInput(event));
+
         document.getElementById('add-record-btn').onclick = () => navigate(`/patients/${patientId}/medical-records/create`);
-        
-        // 상세 페이지 전용 상태 (ID 저장)
         state.currentPatientId = patientId;
 
         const listBody = document.getElementById('records-list');
-        listBody.innerHTML = records.map(r => `
+        if (!records.length) {
+            listBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem;">No medical records.</td></tr>';
+            return;
+        }
+
+        listBody.innerHTML = records.map((record) => `
             <tr>
-                <td>${r.id}</td>
-                <td>${r.chart_number}</td>
-                <td>${r.symptoms}</td>
-                <td>${new Date(r.created_at).toLocaleString()}</td>
-                <td><button onclick="navigate('/medical-records/${r.id}')">상세보기</button></td>
+                <td>${record.id}</td>
+                <td>${record.chart_number}</td>
+                <td>${record.symptoms}</td>
+                <td>${new Date(record.created_at).toLocaleString()}</td>
+                <td><button onclick="navigate('/patients/${patientId}/medical-records/${record.id}')">Detail</button></td>
             </tr>
         `).join('');
     },
 
     async renderRecordCreate(patientId) {
-        const html = await utils.loadTemplate('record-create');
-        const app = document.getElementById('app');
-        app.innerHTML = html;
-        
+        document.getElementById('app').innerHTML = await utils.loadTemplate('record-create');
         const imageInput = document.getElementById('xray_image');
         const previewContainer = document.getElementById('image-preview-container');
 
-        imageInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    previewContainer.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                previewContainer.innerHTML = '<p>이미지 미리보기가 여기에 표시됩니다.</p>';
+        imageInput.onchange = (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                previewContainer.innerHTML = '<p>Image preview appears here.</p>';
+                return;
             }
+
+            const reader = new FileReader();
+            reader.onload = (readerEvent) => {
+                previewContainer.innerHTML = `<img src="${readerEvent.target.result}" style="max-width:100%; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">`;
+            };
+            reader.readAsDataURL(file);
         };
 
-        document.getElementById('record-create-form').onsubmit = (e) => this.handleRecordCreate(e, patientId);
+        document.getElementById('record-create-form').onsubmit = (event) => this.handleRecordCreate(event, patientId);
         document.getElementById('cancel-btn').onclick = () => navigate(`/patients/${patientId}`);
     },
 
-    async renderRecordDetail(recordId) {
-        const record = await apis.getMedicalRecord(recordId);
-        const analyses = await apis.getMedicalRecordAnalyses(recordId);
-        const html = await utils.loadTemplate('record-detail');
-        const app = document.getElementById('app');
-        app.innerHTML = html;
-        
+    async renderRecordDetail(patientId, recordId) {
+        const record = await apis.getMedicalRecord(patientId, recordId);
+        const analyses = await apis.getMedicalRecordAnalyses(patientId, recordId);
+        document.getElementById('app').innerHTML = await utils.loadTemplate('record-detail');
+
         document.getElementById('record-id').innerText = record.id;
         document.getElementById('chart-number').innerText = record.chart_number;
         document.getElementById('symptoms-text').innerText = record.symptoms;
         document.getElementById('created-at').innerText = new Date(record.created_at).toLocaleString();
-        document.getElementById('xray-img').src = record.xray_image_url;
-        
-        document.getElementById('predict-btn').onclick = () => this.handlePredict(recordId);
+
+        const xrayImage = record.xray_images?.[0];
+        const imageElement = document.getElementById('xray-img');
+        imageElement.src = xrayImage?.image_url || '';
+        imageElement.alt = xrayImage ? 'X-ray image' : 'No X-ray image';
+
+        document.getElementById('predict-btn').onclick = () => this.handlePredict(patientId, recordId);
         document.getElementById('back-to-patient-btn').onclick = () => navigate(`/patients/${record.patient_id}`);
-        
+
         const analysisList = document.getElementById('analysis-list');
-        if (analyses.length === 0) {
-            analysisList.innerHTML = '<p>저장된 예측 결과가 없습니다.</p>';
-        } else {
-            analysisList.innerHTML = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>수행 일시</th>
-                            <th>폐렴 여부</th>
-                            <th>Confidence</th>
-                            <th>사용 모델</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${analyses.map(a => `
-                            <tr class="${a.is_pneumonia ? 'result-positive' : 'result-negative'}">
-                                <td>${new Date(a.created_at).toLocaleString()}</td>
-                                <td><strong>${a.is_pneumonia ? 'Positive' : 'Negative'}</strong></td>
-                                <td>${a.confidence}%</td>
-                                <td>${a.ai_model}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+        if (!analyses.length) {
+            analysisList.innerHTML = '<p>No AI analysis results.</p>';
+            return;
         }
+
+        analysisList.innerHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Created At</th>
+                        <th>Pneumonia</th>
+                        <th>Confidence</th>
+                        <th>AI Model</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${analyses.map((analysis) => `
+                        <tr class="${analysis.is_pneumonia ? 'result-positive' : 'result-negative'}">
+                            <td>${new Date(analysis.created_at).toLocaleString()}</td>
+                            <td><strong>${analysis.is_pneumonia ? 'Positive' : 'Negative'}</strong></td>
+                            <td>${Math.round(Number(analysis.confidence) * 100)}%</td>
+                            <td>${analysis.ai_model}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
     },
 
     async renderMyPage() {
-        const html = await utils.loadTemplate('my-page');
-        const app = document.getElementById('app');
-        app.innerHTML = html;
+        document.getElementById('app').innerHTML = await utils.loadTemplate('my-page');
 
-        // 현재 사용자 정보 표시
         document.getElementById('me-email').innerText = state.user.email;
         document.getElementById('me-name-display').innerText = state.user.name;
         document.getElementById('me-department-display').innerText = state.user.department;
-        document.getElementById('me-gender-display').innerText = state.user.gender === 'male' ? '남성' : '여성';
+        document.getElementById('me-gender-display').innerText = uiMappers.genderToLabel(state.user.gender);
         document.getElementById('me-phone-display').innerText = utils.formatPhoneNumber(state.user.phone_number);
-        document.getElementById('me-role-display').innerText = state.user.role;
-
-        // 수정 폼 초기값 설정
-        document.getElementById('update-me-department').value = state.user.department;
+        document.getElementById('me-role-display').innerText = uiMappers.roleToLabel(state.user.role);
+        document.getElementById('update-me-department').value = uiMappers.departmentToTemplate(state.user.department);
         document.getElementById('update-me-phone').value = utils.formatPhoneNumber(state.user.phone_number);
-        
-        const mePhoneInput = document.getElementById('update-me-phone');
-        if (mePhoneInput) {
-            mePhoneInput.addEventListener('input', (e) => utils.handlePhoneInput(e));
-        }
 
-        // 이벤트 바인딩
-        document.getElementById('update-me-form').onsubmit = (e) => this.handleUpdateMe(e);
-        document.getElementById('update-password-form').onsubmit = (e) => this.handleUpdatePassword(e);
+        const mePhoneInput = document.getElementById('update-me-phone');
+        if (mePhoneInput) mePhoneInput.addEventListener('input', (event) => utils.handlePhoneInput(event));
+
+        document.getElementById('update-me-form').onsubmit = (event) => this.handleUpdateMe(event);
+        document.getElementById('update-password-form').onsubmit = (event) => this.handleUpdatePassword(event);
         document.getElementById('delete-me-btn').onclick = () => this.handleDeleteMe();
     },
 
     async renderAdminUsers(params = {}) {
         const users = await apis.adminGetUsers(params);
-        const html = await utils.loadTemplate('admin-users');
-        if (state.currentPage !== '/admin/users') return;
-        const app = document.getElementById('app');
-        app.innerHTML = html;
+        document.getElementById('app').innerHTML = await utils.loadTemplate('admin-users');
 
-        // 필드 값 복원
         const queryInput = document.getElementById('admin-search-query');
         const deptSelect = document.getElementById('admin-filter-dept');
-        if (queryInput && params.query) queryInput.value = params.query;
-        if (deptSelect && params.department) deptSelect.value = params.department;
+        if (queryInput && params.search) queryInput.value = params.search;
+        if (deptSelect && params.department) deptSelect.value = uiMappers.departmentToTemplate(params.department);
 
         const listBody = document.getElementById('admin-users-list');
-        if (users.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">검색 결과가 없습니다.</td></tr>';
+        if (!users.length) {
+            listBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">No users found.</td></tr>';
             return;
         }
-        listBody.innerHTML = users.map(u => `
+
+        listBody.innerHTML = users.map((user) => `
             <tr>
-                <td>${u.id}</td>
-                <td>${u.name}</td>
-                <td>${u.email}</td>
-                <td>${u.department}</td>
-                <td>${utils.formatPhoneNumber(u.phone_number)}</td>
+                <td>${user.id}</td>
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td>${user.department}</td>
+                <td>${utils.formatPhoneNumber(user.phone_number)}</td>
                 <td>
-                    <select onchange="pages.handleRoleUpdate(${u.id}, this.value)" ${u.id === state.user.id ? 'disabled' : ''}>
-                        <option value="pending" ${u.role === 'pending' ? 'selected' : ''}>승인대기</option>
-                        <option value="staff" ${u.role === 'staff' ? 'selected' : ''}>일반회원</option>
-                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>관리자</option>
+                    <select onchange="pages.handleRoleUpdate(${user.id}, this.value)" ${user.id === state.user.id ? 'disabled' : ''}>
+                        <option value="PENDING" ${user.role === 'PENDING' ? 'selected' : ''}>Pending</option>
+                        <option value="STAFF" ${user.role === 'STAFF' ? 'selected' : ''}>Staff</option>
+                        <option value="ADMIN" ${user.role === 'ADMIN' ? 'selected' : ''}>Admin</option>
                     </select>
                 </td>
-                <td>${u.is_active ? '<span class="status-badge success">활성</span>' : '<span class="status-badge error">비활성</span>'}</td>
+                <td>${user.is_active ? '<span class="status-badge success">Active</span>' : '<span class="status-badge error">Inactive</span>'}</td>
             </tr>
         `).join('');
     },
 
-    // --- Event Handlers ---
-
     handleAdminSearch() {
-        const query = document.getElementById('admin-search-query').value;
-        const department = document.getElementById('admin-filter-dept').value;
-        
+        const search = document.getElementById('admin-search-query').value;
+        const department = uiMappers.departmentToApi(document.getElementById('admin-filter-dept').value);
         const params = new URLSearchParams();
-        if (query) params.set('query', query);
+        if (search) params.set('search', search);
         if (department) params.set('department', department);
-        
-        const queryString = params.toString();
-        const path = '/admin/users' + (queryString ? '?' + queryString : '');
-        navigate(path);
+        navigate('/admin/users' + (params.toString() ? `?${params.toString()}` : ''));
     },
 
     resetAdminSearch() {
@@ -273,154 +277,115 @@ const pages = {
     },
 
     async handleRoleUpdate(userId, newRole) {
-        try {
-            await apis.adminUpdateUserRole({ user_id: userId, new_role: newRole });
-            utils.showAlert('권한이 변경되었습니다.', 'success');
-            this.handleAdminSearch();
-        } catch (err) {
-            utils.showAlert(`권한 변경 실패: ${err.message}`, 'error');
-        }
+        await apis.adminUpdateUserRole({ user_id: userId, new_role: newRole });
+        utils.showAlert('Role updated.', 'success');
+        this.handleAdminSearch();
     },
 
-    async handleUpdateMe(e) {
-        e.preventDefault();
+    async handleUpdateMe(event) {
+        event.preventDefault();
         const data = {
-            department: document.getElementById('update-me-department').value,
-            phone_number: document.getElementById('update-me-phone').value.replace(/[^\d]/g, '')
+            department: uiMappers.departmentToApi(document.getElementById('update-me-department').value),
+            phone_number: document.getElementById('update-me-phone').value.replace(/[^\d]/g, ''),
         };
 
-        try {
-            await apis.updateMe(data);
-            utils.showAlert('회원 정보가 수정되었습니다.', 'success');
-            await checkAuth(); // state 갱신 (app.js)
-            this.renderMyPage();
-        } catch (err) {
-            let msg = err.message;
-            if (err.status === 500) msg = '잠시 후 다시시도해주세요.';
-            utils.showAlert(msg, 'error', '수정 실패');
-        }
+        await apis.updateMe(data);
+        utils.showAlert('Profile updated.', 'success');
+        await checkAuth();
+        this.renderMyPage();
     },
 
-    async handleUpdatePassword(e) {
-        e.preventDefault();
+    async handleUpdatePassword(event) {
+        event.preventDefault();
         const data = {
             current_password: document.getElementById('old-password').value,
-            new_password: document.getElementById('new-password').value
+            new_password: document.getElementById('new-password').value,
         };
 
-        try {
-            await apis.updatePassword(data);
-            utils.showAlert('비밀번호가 변경되었습니다.', 'success');
-            e.target.reset();
-        } catch (err) {
-            let msg = err.message;
-            if (err.status === 400) {
-                msg = '비밀번호는 "대소문자, 특수문자, 숫자를 각 1개씩 포함한 8자리 이상이어야 합니다."';
-            } else if (err.status === 500) {
-                msg = '잠시 후 다시시도해주세요.';
-            }
-            utils.showAlert(msg, 'error', '비밀번호 변경 실패');
-        }
+        await apis.updatePassword(data);
+        utils.showAlert('Password updated.', 'success');
+        event.target.reset();
     },
 
     async handleDeleteMe() {
-        if (!confirm('정말로 탈퇴하시겠습니까? 모든 데이터가 삭제됩니다.')) return;
-
-        try {
-            await apis.deleteMe();
-            utils.showAlert('탈퇴 처리가 완료되었습니다.', 'success');
-            logout(); // (app.js)
-        } catch (err) {
-            utils.showAlert(`탈퇴 처리 실패: ${err.message}`, 'error');
-        }
+        if (!confirm('Delete your account?')) return;
+        await apis.deleteMe();
+        utils.showAlert('Account deleted.', 'success');
+        logout();
     },
 
-    async handleLogin(e) {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        await login(email, password); // (app.js)
+    async handleLogin(event) {
+        event.preventDefault();
+        await login(
+            document.getElementById('email').value,
+            document.getElementById('password').value,
+        );
     },
 
-    async handleSignup(e) {
-        e.preventDefault();
+    async handleSignup(event) {
+        event.preventDefault();
         const userData = {
             email: document.getElementById('signup-email').value,
             name: document.getElementById('signup-name').value,
-            department: document.getElementById('signup-department').value,
-            gender: document.getElementById('signup-gender').value,
+            department: uiMappers.departmentToApi(document.getElementById('signup-department').value),
+            gender: uiMappers.genderToApi(document.getElementById('signup-gender').value),
             phone_number: document.getElementById('signup-phone').value.replace(/[^\d]/g, ''),
-            password: document.getElementById('signup-password').value
+            password: document.getElementById('signup-password').value,
         };
 
-        try {
-            await apis.signup(userData);
-            utils.showAlert('회원가입이 완료되었습니다. 로그인해주세요.', 'success');
-            navigate('/login');
-        } catch (err) {
-            let msg = err.message;
-            if (err.status === 400 && (msg.includes('비밀번호') || msg.includes('password'))) {
-                msg = '비밀번호는 "대소문자, 특수문자, 숫자를 각 1개씩 포함한 8자리 이상이어야 합니다."';
-            }
-            if (err.status === 500) msg = '잠시 후 다시시도해주세요.';
-            utils.showAlert(msg, 'error', '가입 실패');
-        }
+        await apis.signup(userData);
+        utils.showAlert('Signup completed. Please login.', 'success');
+        navigate('/login');
     },
 
-    async handlePatientCreate(e) {
-        e.preventDefault();
+    async handlePatientCreate(event) {
+        event.preventDefault();
         const patientData = {
             name: document.getElementById('name').value,
-            age: parseInt(document.getElementById('age').value),
-            gender: document.getElementById('gender').value,
-            phone_number: document.getElementById('phone_number').value.replace(/[^\d]/g, '')
+            age: parseInt(document.getElementById('age').value, 10),
+            gender: uiMappers.genderToApi(document.getElementById('gender').value),
+            phone: document.getElementById('phone_number').value.replace(/[^\d]/g, ''),
         };
-        
-        try {
-            await apis.createPatient(patientData);
-            utils.showAlert('환자가 등록되었습니다.', 'success');
-            navigate('/patients');
-        } catch (err) {
-            utils.showAlert(`환자 등록 실패: ${err.message}`, 'error');
-        }
+
+        await apis.createPatient(patientData);
+        utils.showAlert('Patient created.', 'success');
+        navigate('/patients');
     },
 
     handleSearch() {
-        const name = document.getElementById('search-name').value;
-        const gender = document.getElementById('filter-gender').value;
-        const min_age = document.getElementById('filter-min-age').value;
-        const max_age = document.getElementById('filter-max-age').value;
-
+        const search = document.getElementById('search-name').value;
+        const gender = uiMappers.genderToApi(document.getElementById('filter-gender').value);
+        const minAge = document.getElementById('filter-min-age').value;
+        const maxAge = document.getElementById('filter-max-age').value;
         const params = new URLSearchParams();
-        if (name) params.set('name', name);
+        if (search) params.set('search', search);
         if (gender) params.set('gender', gender);
-        if (min_age) params.set('min_age', min_age);
-        if (max_age) params.set('max_age', max_age);
-
-        const queryString = params.toString();
-        const path = '/patients' + (queryString ? '?' + queryString : '');
-        navigate(path);
+        if (minAge) params.set('min_age', minAge);
+        if (maxAge) params.set('max_age', maxAge);
+        navigate('/patients' + (params.toString() ? `?${params.toString()}` : ''));
     },
 
     resetSearch() {
         navigate('/patients');
     },
 
-    async handleRecordCreate(e, patientId) {
-        e.preventDefault();
+    async handleRecordCreate(event, patientId) {
+        event.preventDefault();
+        const imageFile = document.getElementById('xray_image').files[0];
+        if (!imageFile) {
+            utils.showAlert('Please select an X-ray image.', 'error');
+            return;
+        }
+
         const formData = new FormData();
-        formData.append('patient_id', patientId);
         formData.append('chart_number', document.getElementById('chart_number').value);
         formData.append('symptoms', document.getElementById('symptoms').value);
-        formData.append('xray_image', document.getElementById('xray_image').files[0]);
+        formData.append('shooting_datetime', new Date().toISOString());
+        formData.append('xray_image', imageFile);
 
-        try {
-            await apis.createMedicalRecord(formData);
-            utils.showAlert('진료 기록이 등록되었습니다.', 'success');
-            navigate(`/patients/${patientId}`);
-        } catch (err) {
-            utils.showAlert(`진료 기록 등록 실패: ${err.message}`, 'error');
-        }
+        await apis.createMedicalRecord(patientId, formData);
+        utils.showAlert('Medical record created.', 'success');
+        navigate(`/patients/${patientId}`);
     },
 
     openUpdateModal() {
@@ -431,22 +396,18 @@ const pages = {
         document.getElementById('update-modal').classList.remove('show');
     },
 
-    async handlePatientUpdate(e) {
-        e.preventDefault();
+    async handlePatientUpdate(event) {
+        event.preventDefault();
         const patientId = state.currentPatientId;
         const updateData = {
             name: document.getElementById('update-name').value,
-            phone_number: document.getElementById('update-phone').value.replace(/[^\d]/g, '')
+            phone: document.getElementById('update-phone').value.replace(/[^\d]/g, ''),
         };
 
-        try {
-            await apis.updatePatient(patientId, updateData);
-            utils.showAlert('환자 정보가 수정되었습니다.', 'success');
-            this.closeUpdateModal();
-            this.renderPatientDetail(patientId);
-        } catch (err) {
-            utils.showAlert(`환자 정보 수정 실패: ${err.message}`, 'error');
-        }
+        await apis.updatePatient(patientId, updateData);
+        utils.showAlert('Patient updated.', 'success');
+        this.closeUpdateModal();
+        this.renderPatientDetail(patientId);
     },
 
     confirmDeletePatient() {
@@ -459,23 +420,15 @@ const pages = {
 
     async handlePatientDelete() {
         const patientId = state.currentPatientId;
-        try {
-            await apis.deletePatient(patientId);
-            utils.showAlert('환자 정보와 관련 데이터가 모두 삭제되었습니다.', 'success');
-            this.closeDeleteModal();
-            navigate('/patients');
-        } catch (err) {
-            utils.showAlert(`환자 삭제 실패: ${err.message}`, 'error');
-        }
+        await apis.deletePatient(patientId);
+        utils.showAlert('Patient deleted.', 'success');
+        this.closeDeleteModal();
+        navigate('/patients');
     },
 
-    async handlePredict(recordId) {
-        try {
-            await apis.predictPneumonia(recordId);
-            utils.showAlert('AI 예측이 완료되었습니다.', 'success');
-            navigate(`/medical-records/${recordId}`, false);
-        } catch (err) {
-            utils.showAlert(`AI 예측 실패: ${err.message}`, 'error');
-        }
-    }
+    async handlePredict(patientId, recordId) {
+        await apis.predictPneumonia(patientId, recordId);
+        utils.showAlert('AI prediction completed.', 'success');
+        navigate(`/patients/${patientId}/medical-records/${recordId}`, false);
+    },
 };

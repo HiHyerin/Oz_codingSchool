@@ -59,3 +59,21 @@ async def get_current_admin_user(
         )
 
     return current_user
+
+
+# 현재 사용자가 STAFF 또는 ADMIN 권한인지 확인하는 dependency
+# 역할:
+# - Authorization 헤더의 access_token을 검증해서 현재 사용자를 가져온다.
+# - 현재 사용자의 role이 STAFF 또는 ADMIN인지 확인한다.
+# - 허용된 권한이면 User 객체를 반환한다.
+# - PENDING 등 허용되지 않은 권한이면 403 에러를 발생시킨다.
+async def get_current_staff_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if current_user.role not in [Role.STAFF, Role.ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="환자관리 접근 권한이 필요합니다.",
+        )
+
+    return current_user
